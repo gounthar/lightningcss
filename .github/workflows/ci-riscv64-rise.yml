@@ -14,10 +14,12 @@ jobs:
         run: |
           set -e
           NODE_VER=v20.19.0
+          mkdir -p "$HOME/node"
           curl -fsSL -o /tmp/node.tar.xz "https://unofficial-builds.nodejs.org/download/release/${NODE_VER}/node-${NODE_VER}-linux-riscv64.tar.xz"
-          sudo tar -xJf /tmp/node.tar.xz -C /usr/local --strip-components=1
-          node --version
-          npm --version
+          tar -xJf /tmp/node.tar.xz -C "$HOME/node" --strip-components=1
+          echo "$HOME/node/bin" >> "$GITHUB_PATH"
+          "$HOME/node/bin/node" --version
+          "$HOME/node/bin/npm" --version
       - name: Install Rust
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal
