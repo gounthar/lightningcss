@@ -1,0 +1,38 @@
+name: ci-riscv64-rise
+on:
+  push:
+    branches: [riscv64-rise-ci]
+
+# Fork-only: native riscv64 build of the lightningcss-linux-riscv64-gnu prebuilt
+# on the RISE ubuntu-24.04-riscv runner. Not part of the upstream PR.
+jobs:
+  build:
+    runs-on: ubuntu-24.04-riscv
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Node.js (riscv64 unofficial build)
+        run: |
+          set -e
+          NODE_VER=v20.19.0
+          curl -fsSL -o /tmp/node.tar.xz "https://unofficial-builds.nodejs.org/download/release/${NODE_VER}/node-${NODE_VER}-linux-riscv64.tar.xz"
+          sudo tar -xJf /tmp/node.tar.xz -C /usr/local --strip-components=1
+          node --version
+          npm --version
+      - name: Install Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - name: Install yarn
+        run: npm install -g yarn@1
+      - name: yarn install
+        run: yarn install
+      - name: Build release (native riscv64)
+        run: yarn build-release
+      - name: Verify artifact and smoke test
+        run: |
+          file *.node
+          node -e "const css=require('./node'); const r=css.transform({filename:'t.css',code:Buffer.from('.a{ color: #ffffff; }'),minify:true}); const o=r.code.toString(); if(o!=='.a{color:#fff}'){console.error('UNEXPECTED:',o);process.exit(1);} console.log('RISE_SMOKE_OK:',o);"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lightningcss-linux-riscv64-gnu
+          path: '*.node'
